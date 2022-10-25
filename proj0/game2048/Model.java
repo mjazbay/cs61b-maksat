@@ -212,13 +212,11 @@ public class Model extends Observable {
     * 1.NOT out of bounds
     * 2.NOT visited
     * */
+    static Boolean isValid(Boolean vis[][], int row, int col, int boardSize) {
+        return (!isOutOfBounds(row, col, boardSize) && !vis[row][col]);
+    }
     static Boolean isOutOfBounds(int row, int col, int boardSize) {
         return row < 0 || col < 0 || row >= boardSize || col >= boardSize;
-    }
-    static Boolean isValid(Boolean vis[][], int row, int col, int boardSize) {
-        if (isOutOfBounds(row, col, boardSize)) return false;
-        if (vis[row][col]) return false;
-        return  true;
     }
 
     /**
