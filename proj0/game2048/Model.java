@@ -1,11 +1,13 @@
 package game2048;
 
+import java.util.Arrays;
 import java.util.Formatter;
 import java.util.Observable;
+import java.util.Stack;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author TODO: Maksat Jazbay
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -24,6 +26,16 @@ public class Model extends Observable {
 
     /** Largest piece value. */
     public static final int MAX_PIECE = 2048;
+    private static int dRow[] = {0, 1, 0, -1};
+    private static int dCol[] = {-1, 0, 1, 0};
+    static class Pair {
+        public int row;
+        public int column;
+        public Pair(int row, int column) {
+            this.row = row;
+            this.column = column;
+        }
+    }
 
     /** A new 2048 game on a board of size SIZE with no pieces
      *  and score 0. */
@@ -117,7 +129,37 @@ public class Model extends Observable {
      */
     public void tilt(Side side) {
         // TODO: Fill in this function.
+        _board.setViewingPerspective(side);
 
+        for (int c = 0; c < _board.size(); c++) {
+            Boolean hasScored = false;
+            for (int r = 2; r >= 0; r--) {
+                Tile t = _board.tile(c, r); //start at [0,2]
+                if (t == null) continue;
+                if (!isOutOfBounds(c,r-1, _board.size())) {
+                    if (_board.tile(c, r-1) != null) hasScored = false;
+                }
+                int m = r;
+                for (int i = r + 1; i < _board.size(); i++) {
+                    if (_board.tile(c, i) == null) {
+                        m = i;
+                        continue;
+                    }
+                    if (_board.tile(c, i).value() == t.value()) {
+                        if (hasScored) continue;
+                        m = i;
+                        continue;
+                    }
+                    if (_board.tile(c, i).value() != t.value()) break;
+                }
+                Tile neigh = _board.tile(c, m);
+                if (_board.move(c, m, t)) {
+                    _score += t.value() + neigh.value();
+                    hasScored = true;
+                }
+            }
+        }
+        _board.setViewingPerspective(Side.NORTH);
         checkGameOver();
     }
 
@@ -138,6 +180,13 @@ public class Model extends Observable {
      */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        for (int i = 0; i < b.size(); i++) {
+            for (int j = 0; j < b.size(); j++) {
+                if (b.tile(j, i) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,7 +197,26 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        for (int i = 0; i < b.size(); i++) {
+            for (int j = 0; j < b.size(); j++) {
+                Tile curTile = b.tile(j, i);
+                if (curTile != null && curTile.value() == MAX_PIECE) {
+                    return true;
+                }
+            }
+        }
         return false;
+    }
+    /*
+    * Returns true if the tile is
+    * 1.NOT out of bounds
+    * 2.NOT visited
+    * */
+    static Boolean isValid(Boolean vis[][], int row, int col, int boardSize) {
+        return (!isOutOfBounds(row, col, boardSize) && !vis[row][col]);
+    }
+    static Boolean isOutOfBounds(int row, int col, int boardSize) {
+        return row < 0 || col < 0 || row >= boardSize || col >= boardSize;
     }
 
     /**
@@ -159,6 +227,29 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        if (emptySpaceExists(b)) return true;
+        Boolean vis[][] = new Boolean[b.size()][b.size()];
+        for (Boolean[] row: vis)
+            Arrays.fill(row, false);
+
+        Stack<Pair> st = new Stack<Pair>();
+        st.push(new Pair(0,0));
+        while (!st.empty()) {
+            Pair curr = st.pop();
+            Integer row  = curr.row;
+            Integer col = curr.column;
+
+            if (!isValid(vis, row, col, b.size())) continue;
+            vis[row][col] = true;
+            for (int i = 0; i < 4; i++) {
+                int adjx = row + dRow[i];
+                int adjy = col + dCol[i];
+                if (!isOutOfBounds(adjx, adjy, b.size())) {
+                    if ( b.tile(row, col).value() == b.tile(adjx, adjy).value()) return true;
+                }
+                st.push(new Pair(adjx, adjy));
+            }
+        }
         return false;
     }
 
